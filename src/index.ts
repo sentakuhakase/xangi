@@ -15,6 +15,7 @@ import { ClaudeCodeRunner } from './claude-code.js';
 import { processManager } from './process-manager.js';
 import { loadSkills, formatSkillList, type Skill } from './skills.js';
 import { startSlackBot } from './slack.js';
+import { startLineBot } from './line.js';
 import {
   downloadFile,
   extractFilePaths,
@@ -1383,9 +1384,23 @@ async function main() {
     console.log('[xangi] Slack bot started');
   }
 
-  if (!config.discord.enabled && !config.slack.enabled) {
+  // LINEボットを起動
+  if (config.line.enabled) {
+    await startLineBot({
+      config,
+      agentRunner,
+      skills,
+      reloadSkills: () => {
+        skills = loadSkills(workdir);
+        return skills;
+      },
+    });
+    console.log('[xangi] LINE bot started');
+  }
+
+  if (!config.discord.enabled && !config.slack.enabled && !config.line.enabled) {
     console.error(
-      '[xangi] No chat platform enabled. Set DISCORD_TOKEN or SLACK_BOT_TOKEN/SLACK_APP_TOKEN'
+      '[xangi] No chat platform enabled. Set DISCORD_TOKEN, SLACK_BOT_TOKEN/SLACK_APP_TOKEN, or LINE_CHANNEL_ACCESS_TOKEN'
     );
     process.exit(1);
   }

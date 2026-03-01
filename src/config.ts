@@ -34,6 +34,13 @@ export interface Config {
     streaming?: boolean;
     showThinking?: boolean;
   };
+  line: {
+    enabled: boolean;
+    channelAccessToken?: string;
+    channelSecret?: string;
+    allowedUsers?: string[];
+    port: number;
+  };
   agent: {
     backend: AgentBackend;
     config: AgentConfig;
@@ -50,16 +57,22 @@ export function loadConfig(): Config {
   const discordToken = process.env.DISCORD_TOKEN;
   const slackBotToken = process.env.SLACK_BOT_TOKEN;
   const slackAppToken = process.env.SLACK_APP_TOKEN;
+  const lineChannelAccessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
+  const lineChannelSecret = process.env.LINE_CHANNEL_SECRET;
 
-  // 少なくともどちらかが有効である必要がある
-  if (!discordToken && !slackBotToken) {
-    throw new Error('DISCORD_TOKEN or SLACK_BOT_TOKEN environment variable is required');
+  // 少なくともどれかが有効である必要がある
+  if (!discordToken && !slackBotToken && !lineChannelAccessToken) {
+    throw new Error(
+      'DISCORD_TOKEN, SLACK_BOT_TOKEN, or LINE_CHANNEL_ACCESS_TOKEN environment variable is required'
+    );
   }
 
   const discordAllowedUser = process.env.DISCORD_ALLOWED_USER;
   const slackAllowedUser = process.env.SLACK_ALLOWED_USER;
+  const lineAllowedUser = process.env.LINE_ALLOWED_USER;
   const discordAllowedUsers = discordAllowedUser ? [discordAllowedUser] : [];
   const slackAllowedUsers = slackAllowedUser ? [slackAllowedUser] : [];
+  const lineAllowedUsers = lineAllowedUser ? [lineAllowedUser] : [];
 
   const backend = (process.env.AGENT_BACKEND || 'claude-code') as AgentBackend;
   if (backend !== 'claude-code' && backend !== 'codex' && backend !== 'gemini') {
@@ -103,9 +116,17 @@ export function loadConfig(): Config {
           .filter(Boolean) || [],
       replyInThread: process.env.SLACK_REPLY_IN_THREAD !== 'false',
       streaming: process.env.SLACK_STREAMING !== 'false',
-      showThinking: process.env.SLACK_SHOW_THINKING !== 'false',
+      showThinking: process.env.DISCORD_SHOW_THINKING !== 'false',
+    },
+    line: {
+      enabled: !!lineChannelAccessToken && !!lineChannelSecret,
+      channelAccessToken: lineChannelAccessToken,
+      channelSecret: lineChannelSecret,
+      allowedUsers: lineAllowedUsers,
+      port: process.env.PORT ? parseInt(process.env.PORT, 10) : 3000,
     },
     agent: {
+
       backend,
       config: agentConfig,
     },
